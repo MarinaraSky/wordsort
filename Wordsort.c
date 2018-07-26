@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define C_FLAG 		0x01
 #define R_FLAG 		0x02
@@ -8,16 +9,34 @@
 #define S_FLAG	 	0x10
 #define A_FLAG	 	0x20
 #define U_FLAG	 	0x40
-#define H_FLAG		0x80
 #define ALL_SORT	0x3C
+#define MAX_SIZE	128
+
+typedef struct Word 
+{
+	char string[MAX_SIZE];
+	int isChunk;
+	int length;
+	int numberScore;
+	int scrabbleScore;
+	struct Word *nextWordPointer;
+	struct Word *lastWordPointer;
+}Word;
 
 void printHelp(void);
 unsigned char parseFlags(int argc, const char *argv[]);
+void findFileNames(int argc, const char *argv[]);
+Word *newWord(const char *word);
+void alphaSort(Word *word);
+Word *insertNewWord(Word *word, char *string);
+
 
 int main(int argc, const char *argv[])
 {
 	unsigned char flags = parseFlags(argc, argv);
+
 	printf("%d\n", flags);
+	findFileNames(argc, argv);
 	return 0;
 }
 
@@ -66,7 +85,6 @@ unsigned char parseFlags(int argc, const char *argv[])
 					default:
 						printf("Unknown Switch present.\n");
 						exit(1);
-
 				}
 			}
 		}
@@ -75,8 +93,77 @@ unsigned char parseFlags(int argc, const char *argv[])
 			flags |= R_FLAG;
 		}
 	}
-	else
-	{
-	}
 	return flags;
+}
+
+void findFileNames(int argc, const char *argv[])
+{
+	FILE *currFile;
+	char buff[MAX_SIZE];
+	Word *list = NULL;
+	if(argc > 1)
+	{
+		for(int i = 1; i < argc; i++)
+		{
+			if(*argv[i] != '-')
+			{
+				currFile = fopen(argv[i], "r");
+				if(currFile == NULL)
+				{
+					//fail case not sure yet
+				}
+				int j = 0;
+				while(fgets(buff, MAX_SIZE, currFile) != NULL)
+				{
+					buff[strlen(buff) - 1] = 0;
+					if(j == 0)
+					{
+						list = insertNewWord(list, buff);
+						j++;
+					}
+					else
+					{
+						insertNewWord(list, buff);
+					}
+				}
+				alphaSort(list);
+				fclose(currFile);
+			}
+		}
+	}
+}
+
+Word *newWord(const char *word)
+{
+	Word *new = malloc(sizeof(Word));
+	strcpy(new->string, word);
+	new->nextWordPointer = new->lastWordPointer = NULL;
+	return new;
+}
+
+void alphaSort(Word *word)
+{
+	if(word != NULL)
+	{
+		alphaSort(word->lastWordPointer);
+		printf("%s\n", word->string);
+		alphaSort(word->nextWordPointer);
+	}
+}
+
+Word *insertNewWord(Word *word, char *string)
+{
+	if(word == NULL)
+	{
+		return newWord(string);
+	}
+	if(string[0] < word->string[0])
+	{
+		word->lastWordPointer = insertNewWord(word->lastWordPointer, string);
+	}
+	else if(string[0] > word->string[0])
+	{
+		word->nextWordPointer = insertNewWord(word->nextWordPointer, string);
+	}
+	return word;
 }
