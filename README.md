@@ -1,0 +1,1 @@
+This will sort all words in all supplied files 
