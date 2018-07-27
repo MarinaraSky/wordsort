@@ -59,6 +59,8 @@ void printHelp(void)
 	printf("Help Here.\n");
 }
 
+static int cCount = 0;
+
 unsigned char parseFlags(int argc, const char *argv[])
 {
 	int rFlagCount = 0;
@@ -71,6 +73,17 @@ unsigned char parseFlags(int argc, const char *argv[])
 			{
 				switch(argv[i][1])
 				{
+					case('c'):
+						if(argc > i + 1 && atoi(argv[i + 1]))
+						{
+							flags |= C_FLAG;
+							cCount = atoi(argv[i + 1]);
+						}
+						else
+						{
+							printf("No value for -c. Continuting without.\n");
+						}
+						break;
 					case('r'):
 						rFlagCount++;
 						break;
@@ -127,42 +140,38 @@ Word *findWords(int argc, const char *argv[], const char flags)
 	{
 		for(int i = 1; i < argc; i++)
 		{
-			if(*argv[i] != '-')
+			currFile = fopen(argv[i], "r");
+			if(currFile == NULL)
 			{
-				currFile = fopen(argv[i], "r");
-				if(currFile == NULL)
+				continue;
+			}
+			int j = 0;
+			while(fgets(buff, (buffSize * multiplier), currFile) != NULL)
+			{
+				if(strlen(buff) == (unsigned )(buffSize * multiplier) - 1)
 				{
-					printf("Could not open file: %s\n", argv[i]);
+					multiplier++;
+					fseek(currFile, -strlen(buff), SEEK_CUR);
+					buff = realloc(buff, (buffSize * multiplier)+ 1);	
 					continue;
 				}
-				int j = 0;
-				while(fgets(buff, (buffSize * multiplier), currFile) != NULL)
+				tokens = strtok(buff, " ");
+				while(tokens !=  0)
 				{
-					if(strlen(buff) == (unsigned )(buffSize * multiplier) - 1)
+					if(j == 0)
 					{
-						multiplier++;
-						fseek(currFile, -strlen(buff), SEEK_CUR);
-						buff = realloc(buff, (buffSize * multiplier)+ 1);	
-						continue;
+						list = insertNewWord(list, tokens, flags);
+						j++;
 					}
-					tokens = strtok(buff, " ");
-					while(tokens !=  0)
+					else
 					{
-						if(j == 0)
-						{
-							list = insertNewWord(list, tokens, flags);
-							j++;
-						}
-						else
-						{
-							insertNewWord(list, tokens, flags);
-						}
-						tokens = strtok(NULL, " ");
+						insertNewWord(list, tokens, flags);
 					}
+					tokens = strtok(NULL, " ");
 				}
-				fclose(currFile);
-				free(buff);
 			}
+			fclose(currFile);
+			free(buff);
 		}
 	}
 	return list;
@@ -198,13 +207,22 @@ Word *newWord(char *word)
 
 void printList(Word *word, const char flags)
 {
-	if(word != NULL)
+	if(word != NULL && cCount >= 0)
 	{
 		printList(word->lastWordPointer, flags);
 		if((flags & U_FLAG) == U_FLAG && (word->dupe & 1) == 1);
 		else
 		{
-			printf("%s\n", word->string);
+			if((flags & C_FLAG) == C_FLAG && cCount >= 1 && word != NULL)
+			{
+				cCount--;
+				printf("%s\n", word->string);
+			}
+			else if((flags & C_FLAG) != C_FLAG)
+			{
+				printf("%s\n", word->string);
+			}
+
 		}
 		printList(word->nextWordPointer, flags);
 		free(word->string);
@@ -214,15 +232,26 @@ void printList(Word *word, const char flags)
 
 void printList_r(Word *word, const char flags)
 {
-	if(word != NULL)
+	if(word != NULL && cCount >= 0)
 	{
-
+//		printf("test: %d \t %s\n",cCount, word->string);
 		printList_r(word->nextWordPointer, flags);
 		if((flags & U_FLAG) == U_FLAG && (word->dupe & 1) == 1);
-		else{
-			printf("%s\n", word->string);
+		else
+		{
+			if((flags & C_FLAG) == C_FLAG && cCount >= 1 && word != NULL)
+			{
+				cCount--;
+				printf("%s\n", word->string);
+			}
+			else if((flags & C_FLAG) != C_FLAG)
+			{
+				printf("%s\n", word->string);
+			}
 		}
 		printList_r(word->lastWordPointer, flags);
+		free(word->string);
+		free(word);
 	}
 }
 
@@ -408,6 +437,5 @@ int getScrabbleScore(char *string)
 	{
 		score += scrabble[string[i] - 'a'];
 	}
-	printf("%d\n", score);
 	return score;
 }
