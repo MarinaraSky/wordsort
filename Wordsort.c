@@ -16,7 +16,7 @@ typedef struct Word
 {
 	char string[MAX_SIZE];
 	int isChunk;
-	int length;
+	unsigned int length;
 	int numberScore;
 	int scrabbleScore;
 	struct Word *nextWordPointer;
@@ -25,19 +25,33 @@ typedef struct Word
 
 void printHelp(void);
 unsigned char parseFlags(int argc, const char *argv[]);
-void findFileNames(int argc, const char *argv[]);
+Word *findWords(int argc, const char *argv[], const char flags);
 Word *newWord(const char *word);
-void alphaSort(Word *word);
-void alphaSort_r(Word *word);
-Word *insertNewWord(Word *word, char *string);
+void printList(Word *word);
+void printList_r(Word *word);
+Word *insertNewWord(Word *word, char *string, const char flags);
 int stringcmp(char *wordString, char *string);
 void freeWordList(Word *word);
 
 int main(int argc, const char *argv[])
 {
-	unsigned char flags = parseFlags(argc, argv);
+	unsigned char flags = 0;
+	flags = parseFlags(argc, argv);
+	if((flags & ALL_SORT) == 0)
+	{
+		flags |= A_FLAG;
+	}
+	Word *tree = findWords(argc,argv, flags);
+	if((flags & R_FLAG) == R_FLAG)
+	{
+		printList_r(tree);
+	}
+	else
+	{
+		printList(tree);
+	}
+	freeWordList(tree);
 
-	findFileNames(argc, argv);
 	return 0;
 }
 
@@ -49,7 +63,7 @@ void printHelp(void)
 unsigned char parseFlags(int argc, const char *argv[])
 {
 	int rFlagCount = 0;
-	unsigned char flags;
+	unsigned char flags = 0;
 	if(argc > 1)
 	{
 		for(int i = 0; i < argc; i++)
@@ -97,7 +111,7 @@ unsigned char parseFlags(int argc, const char *argv[])
 	return flags;
 }
 
-void findFileNames(int argc, const char *argv[])
+Word *findWords(int argc, const char *argv[], const char flags)
 {
 	FILE *currFile;
 	char buff[MAX_SIZE];
@@ -111,72 +125,102 @@ void findFileNames(int argc, const char *argv[])
 				currFile = fopen(argv[i], "r");
 				if(currFile == NULL)
 				{
-					//fail case not sure yet
+					printf("Could not open file: %s\n", argv[i]);
 				}
 				int j = 0;
 				while(fgets(buff, MAX_SIZE - 1, currFile) != NULL)
 				{
 					if(j == 0)
 					{
-						list = insertNewWord(list, buff);
+						list = insertNewWord(list, buff, flags);
 						j++;
 					}
 					else
 					{
-						insertNewWord(list, buff);
+						insertNewWord(list, buff, flags);
 					}
 				}
 				fclose(currFile);
 			}
 		}
-		alphaSort(list);
-		printf("\n");
-		alphaSort_r(list);
-		freeWordList(list);
 	}
+	return list;
 }
 
 Word *newWord(const char *word)
 {
 	Word *new = malloc(sizeof(Word));
+	int sum = 0;
+	if(new == NULL)
+	{
+		printf("Unable to add to list. Quitting.\n");
+		exit(2);
+	}
 	strcpy(new->string, word);
+	new->length = strlen(word);
+	for(unsigned int i = 0; i < strlen(word); i++)
+	{
+		sum += word[i];	
+	}
+	new->numberScore = sum;
 	new->nextWordPointer = new->lastWordPointer = NULL;
 	return new;
 }
 
-void alphaSort(Word *word)
+void printList(Word *word)
 {
 	if(word != NULL)
 	{
-		alphaSort(word->lastWordPointer);
+		printList(word->lastWordPointer);
 		printf("%s", word->string);
-		alphaSort(word->nextWordPointer);
+		printList(word->nextWordPointer);
 	}
 }
 
-void alphaSort_r(Word *word)
+void printList_r(Word *word)
 {
 	if(word != NULL)
 	{
-		alphaSort_r(word->nextWordPointer);
+		printList_r(word->nextWordPointer);
 		printf("%s", word->string);
-		alphaSort_r(word->lastWordPointer);
+		printList_r(word->lastWordPointer);
 	}
 }
 
-Word *insertNewWord(Word *word, char *string)
+Word *insertNewWord(Word *word, char *string, const char flags)
 {
 	if(word == NULL)
 	{
 		return newWord(string);
 	}
-	if(stringcmp(word->string, string))
+	int score = 0;
+	for(unsigned int i = 0; i < strlen(string); i++)
 	{
-		word->lastWordPointer = insertNewWord(word->lastWordPointer, string);
+		score += string[i];	
 	}
-	else
+	if((flags & A_FLAG) == A_FLAG && stringcmp(word->string, string))
 	{
-		word->nextWordPointer = insertNewWord(word->nextWordPointer, string);
+		word->lastWordPointer = insertNewWord(word->lastWordPointer, string, flags);
+	}
+	else if((flags & A_FLAG) == A_FLAG)
+	{
+		word->nextWordPointer = insertNewWord(word->nextWordPointer, string, flags);
+	}
+	else if(((flags & L_FLAG) == L_FLAG) && word->length < strlen(string))
+	{
+		word->lastWordPointer = insertNewWord(word->lastWordPointer, string, flags);
+	}
+	else if(((flags & L_FLAG) == L_FLAG))
+	{
+		word->nextWordPointer = insertNewWord(word->nextWordPointer, string, flags);
+	}
+	else if(((flags & N_FLAG) == N_FLAG) && word->numberScore < score)
+	{
+		word->lastWordPointer = insertNewWord(word->lastWordPointer, string, flags);
+	}
+	else if(((flags & N_FLAG) == N_FLAG))
+	{
+		word->nextWordPointer = insertNewWord(word->nextWordPointer, string, flags);
 	}
 	return word;
 }
