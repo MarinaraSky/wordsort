@@ -28,14 +28,15 @@ unsigned char parseFlags(int argc, const char *argv[]);
 void findFileNames(int argc, const char *argv[]);
 Word *newWord(const char *word);
 void alphaSort(Word *word);
+void alphaSort_r(Word *word);
 Word *insertNewWord(Word *word, char *string);
-
+int stringcmp(char *wordString, char *string);
+void freeWordList(Word *word);
 
 int main(int argc, const char *argv[])
 {
 	unsigned char flags = parseFlags(argc, argv);
 
-	printf("%d\n", flags);
 	findFileNames(argc, argv);
 	return 0;
 }
@@ -113,9 +114,8 @@ void findFileNames(int argc, const char *argv[])
 					//fail case not sure yet
 				}
 				int j = 0;
-				while(fgets(buff, MAX_SIZE, currFile) != NULL)
+				while(fgets(buff, MAX_SIZE - 1, currFile) != NULL)
 				{
-					buff[strlen(buff) - 1] = 0;
 					if(j == 0)
 					{
 						list = insertNewWord(list, buff);
@@ -126,10 +126,13 @@ void findFileNames(int argc, const char *argv[])
 						insertNewWord(list, buff);
 					}
 				}
-				alphaSort(list);
 				fclose(currFile);
 			}
 		}
+		alphaSort(list);
+		printf("\n");
+		alphaSort_r(list);
+		freeWordList(list);
 	}
 }
 
@@ -146,8 +149,18 @@ void alphaSort(Word *word)
 	if(word != NULL)
 	{
 		alphaSort(word->lastWordPointer);
-		printf("%s\n", word->string);
+		printf("%s", word->string);
 		alphaSort(word->nextWordPointer);
+	}
+}
+
+void alphaSort_r(Word *word)
+{
+	if(word != NULL)
+	{
+		alphaSort_r(word->nextWordPointer);
+		printf("%s", word->string);
+		alphaSort_r(word->lastWordPointer);
 	}
 }
 
@@ -157,13 +170,66 @@ Word *insertNewWord(Word *word, char *string)
 	{
 		return newWord(string);
 	}
-	if(string[0] < word->string[0])
+	if(stringcmp(word->string, string))
 	{
 		word->lastWordPointer = insertNewWord(word->lastWordPointer, string);
 	}
-	else if(string[0] > word->string[0])
+	else
 	{
 		word->nextWordPointer = insertNewWord(word->nextWordPointer, string);
 	}
 	return word;
+}
+
+int stringcmp(char *wordString, char *string)
+{
+	int returnCode = 0;
+	if(strlen(string) < strlen(wordString))
+	{
+		for(unsigned int i = 0; i < strlen(string); i++)
+		{
+			if(string[i] < wordString[i])
+			{
+				returnCode = 1;
+				break;
+			}		
+			else if(string[i] > wordString[i])
+			{
+				break;
+			}
+		}
+	}
+	else
+	{
+		for(unsigned int i = 0; i < strlen(wordString); i++)
+		{
+			if(string[i] < wordString[i])
+			{
+				returnCode = 1;
+				break;
+			}		
+			else if(string[i] > wordString[i])
+			{
+				break;
+			}
+		}
+	}
+	return returnCode;
+}
+
+void freeWordList(Word *word)
+{
+	if(word == NULL)
+	{
+		return;	
+	}
+	if(word->nextWordPointer)
+	{
+		freeWordList(word->nextWordPointer);
+	}
+	else
+	{
+		freeWordList(word->lastWordPointer);
+	}
+	free(word);
 }
