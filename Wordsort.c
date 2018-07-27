@@ -14,8 +14,7 @@
 
 typedef struct Word 
 {
-	char string[MAX_SIZE];
-	int isChunk;
+	char *string;
 	unsigned int length;
 	int numberScore;
 	int scrabbleScore;
@@ -26,12 +25,11 @@ typedef struct Word
 void printHelp(void);
 unsigned char parseFlags(int argc, const char *argv[]);
 Word *findWords(int argc, const char *argv[], const char flags);
-Word *newWord(const char *word);
+Word *newWord(char *word);
 void printList(Word *word);
 void printList_r(Word *word);
 Word *insertNewWord(Word *word, char *string, const char flags);
 int stringcmp(char *wordString, char *string);
-void freeWordList(Word *word);
 
 int main(int argc, const char *argv[])
 {
@@ -50,7 +48,7 @@ int main(int argc, const char *argv[])
 	{
 		printList(tree);
 	}
-	freeWordList(tree);
+//	freeWordList(tree);
 
 	return 0;
 }
@@ -114,7 +112,14 @@ unsigned char parseFlags(int argc, const char *argv[])
 Word *findWords(int argc, const char *argv[], const char flags)
 {
 	FILE *currFile;
-	char buff[MAX_SIZE];
+	int multiplier = 1;
+	int buffSize = MAX_SIZE;
+	char *buff = calloc((buffSize * multiplier), 1);
+	if(buff == NULL)
+	{
+		printf("Out of memory. Quitting.\n");
+		exit(2);
+	}
 	Word *list = NULL;
 	if(argc > 1)
 	{
@@ -128,8 +133,15 @@ Word *findWords(int argc, const char *argv[], const char flags)
 					printf("Could not open file: %s\n", argv[i]);
 				}
 				int j = 0;
-				while(fgets(buff, MAX_SIZE - 1, currFile) != NULL)
+				while(fgets(buff, (buffSize * multiplier), currFile) != NULL)
 				{
+					if(strlen(buff) == (unsigned )(buffSize * multiplier) - 1)
+					{
+						multiplier++;
+						buff = realloc(buff, (buffSize * multiplier)+ 1);	
+						fseek(currFile, -strlen(buff), SEEK_CUR);						
+						continue;
+					}
 					if(j == 0)
 					{
 						list = insertNewWord(list, buff, flags);
@@ -141,19 +153,32 @@ Word *findWords(int argc, const char *argv[], const char flags)
 					}
 				}
 				fclose(currFile);
+				free(buff);
 			}
 		}
 	}
 	return list;
 }
 
-Word *newWord(const char *word)
+Word *newWord(char *word)
 {
 	Word *new = malloc(sizeof(Word));
+	word[strlen(word)] = 0;
+	if(new == NULL)
+	{
+		printf("Out of Memory. Quitting.\n");
+		exit(2);
+	}
 	int sum = 0;
 	if(new == NULL)
 	{
 		printf("Unable to add to list. Quitting.\n");
+		exit(2);
+	}
+	new->string = malloc(strlen(word) + 1);
+	if(new->string == NULL)
+	{
+		printf("Out of Memory. Quitting.\n");
 		exit(2);
 	}
 	strcpy(new->string, word);
@@ -174,6 +199,8 @@ void printList(Word *word)
 		printList(word->lastWordPointer);
 		printf("%s", word->string);
 		printList(word->nextWordPointer);
+		free(word->string);
+		free(word);
 	}
 }
 
@@ -243,7 +270,7 @@ int stringcmp(char *wordString, char *string)
 			}
 		}
 	}
-	else
+	else if(strlen(string) > strlen(wordString))
 	{
 		for(unsigned int i = 0; i < strlen(wordString); i++)
 		{
@@ -259,21 +286,4 @@ int stringcmp(char *wordString, char *string)
 		}
 	}
 	return returnCode;
-}
-
-void freeWordList(Word *word)
-{
-	if(word == NULL)
-	{
-		return;	
-	}
-	if(word->nextWordPointer)
-	{
-		freeWordList(word->nextWordPointer);
-	}
-	else
-	{
-		freeWordList(word->lastWordPointer);
-	}
-	free(word);
 }
