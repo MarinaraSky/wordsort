@@ -23,15 +23,15 @@ typedef struct Word
 	struct Word *lastWordPointer;
 }Word;
 
-void printHelp(void);
-unsigned char parseFlags(int argc, const char *argv[]);
-Word *findWords(int argc, const char *argv[], const char flags);
-Word *newWord(char *word);
-void printList(Word *word, const char flags);
-void printList_r(Word *word, const char flags);
-Word *insertNewWord(Word *word, char *string, const char flags);
-int stringcmp(char *wordString, char *string);
-int getScrabbleScore(char *string);
+static void printHelp(void);
+static unsigned char parseFlags(int argc, const char *argv[]);
+static Word *findWords(int argc, const char *argv[], const char flags);
+static Word *newWord(char *word);
+static void printList(Word *word, const char flags);
+static void printList_r(Word *word, const char flags);
+static Word *insertNewWord(Word *word, char *string, const char flags);
+static int stringcmp(char *wordString, char *string);
+static int getScrabbleScore(char *string);
 
 int main(int argc, const char *argv[])
 {
@@ -54,24 +54,26 @@ int main(int argc, const char *argv[])
 	return 0;
 }
 
-void printHelp(void)
+static void printHelp(void)
 {
 	printf("Usage: ./ws [-h][-c NUM][-r][-n][-l][-a][-u][-s] [FILENAME]\n");
-	printf("\t-h: \tThis menu\n");
-	printf("\t-c NUM:\tDisplay NUM amount of lines.\n");
-	printf("\t-r:\tDisplay results in reverse order.\n");
-	printf("\t-n:\tDisplay results sorted by their number score.\n");
-	printf("\t-l:\tDisplay results base on length.\n");
-	printf("\t-a:\tDisplay results alphabetically(Default).\n");
-	printf("\t-u:\tDisplay results that are unique only.\n");
-	printf("\t-s:\tDisplay results based on their score in the game Scrabble.\n");
+	printf("\n");
+	printf("\t-h, --help:\t\tThis menu\n");
+	printf("\t-c NUM, --count NUM:\tDisplay NUM amount of lines.\n");
+	printf("\t-r, --reverse:\t\tDisplay results in reverse order.\n");
+	printf("\t-n, --number:\t\tDisplay results sorted by their number score.\n");
+	printf("\t-l, --length:\t\tDisplay results base on length.\n");
+	printf("\t-a, --alpha:\t\tDisplay results alphabetically(Default).\n");
+	printf("\t-u, --unique:\t\tDisplay results that are unique only.\n");
+	printf("\t-s, --scrabble:\t\tDisplay results based on their score in the game Scrabble.\n");
+	printf("\n");
 	printf("If no parameters are set, the user can input data directly into the terminal.\n"
 			"To sort the input press CTL+D.\n");
 }
 
 static int cCount = 0;
 
-unsigned char parseFlags(int argc, const char *argv[])
+static unsigned char parseFlags(int argc, const char *argv[])
 {
 	int rFlagCount = 0;
 	unsigned char flags = 0;
@@ -81,7 +83,41 @@ unsigned char parseFlags(int argc, const char *argv[])
 		{
 			if(*argv[i] == '-')
 			{
-				switch(argv[i][1])
+				char *args = (char *)argv[i];
+				if(strcmp(args, "--help") == 0)
+				{
+					strcpy(args, "-h");
+				}
+
+				else if(strcmp(args, "--count") == 0)
+				{
+					strcpy(args, "-c");
+				}
+				else if(strcmp(args, "--reverse") == 0)
+				{
+					strcpy(args, "-r");
+				}
+				else if(strcmp(args, "--number") == 0)
+				{
+					strcpy(args, "-n");
+				}
+				else if(strcmp(args, "--length") == 0)
+				{
+					strcpy(args, "-l");
+				}
+				else if(strcmp(args, "--alpha") == 0)
+				{
+					strcpy(args, "-a");
+				}
+				else if(strcmp(args, "--unique") == 0)
+				{
+					strcpy(args, "-u");
+				}
+				else if(strcmp(args, "--scrabble") == 0)
+				{
+					strcpy(args, "-s");
+				}
+				switch(args[1])
 				{
 					case('c'):
 						if(argc > i + 1 && atoi(argv[i + 1]))
@@ -133,7 +169,7 @@ unsigned char parseFlags(int argc, const char *argv[])
 	return flags;
 }
 
-Word *findWords(int argc, const char *argv[], const char flags)
+static Word *findWords(int argc, const char *argv[], const char flags)
 {
 	FILE *currFile;
 	int multiplier = 1;
@@ -216,7 +252,7 @@ Word *findWords(int argc, const char *argv[], const char flags)
 	return list;
 }
 
-Word *newWord(char *word)
+static Word *newWord(char *word)
 {
 	Word *new = malloc(sizeof(Word));
 	word[strlen(word)] = 0;
@@ -244,7 +280,7 @@ Word *newWord(char *word)
 	return new;
 }
 
-void printList(Word *word, const char flags)
+static void printList(Word *word, const char flags)
 {
 	if(word != NULL && cCount >= 0)
 	{
@@ -269,11 +305,10 @@ void printList(Word *word, const char flags)
 	}
 }
 
-void printList_r(Word *word, const char flags)
+static void printList_r(Word *word, const char flags)
 {
 	if(word != NULL && cCount >= 0)
 	{
-//		printf("test: %d \t %s\n",cCount, word->string);
 		printList_r(word->nextWordPointer, flags);
 		if((flags & U_FLAG) == U_FLAG && (word->dupe & 1) == 1);
 		else
@@ -294,7 +329,7 @@ void printList_r(Word *word, const char flags)
 	}
 }
 
-Word *insertNewWord(Word *word, char *string, const char flags)
+static Word *insertNewWord(Word *word, char *string, const char flags)
 {
 	string[strcspn(string, "\n")] = 0;
 	if(word == NULL)
@@ -432,7 +467,7 @@ Word *insertNewWord(Word *word, char *string, const char flags)
 	return word;
 }
 
-int stringcmp(char *wordString, char *string)
+static int stringcmp(char *wordString, char *string)
 {
 	int returnCode = 0;
 	if(strlen(string) <= strlen(wordString))
@@ -469,7 +504,7 @@ int stringcmp(char *wordString, char *string)
 }
 
 
-int getScrabbleScore(char *string)
+static int getScrabbleScore(char *string)
 {
 	int scrabble[] = { 1, 3, 3, 2, 1, 4, 2, 4, 1, 8, 5, 1, 3, 1, 1, 3, 10, 1, 1, 1, 1, 4, 4, 8, 4, 10};
 	int score = 0;
