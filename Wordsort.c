@@ -56,7 +56,17 @@ int main(int argc, const char *argv[])
 
 void printHelp(void)
 {
-	printf("Help Here.\n");
+	printf("Usage: ./ws [-h][-c NUM][-r][-n][-l][-a][-u][-s] [FILENAME]\n");
+	printf("\t-h: \tThis menu\n");
+	printf("\t-c NUM:\tDisplay NUM amount of lines.\n");
+	printf("\t-r:\tDisplay results in reverse order.\n");
+	printf("\t-n:\tDisplay results sorted by their number score.\n");
+	printf("\t-l:\tDisplay results base on length.\n");
+	printf("\t-a:\tDisplay results alphabetically(Default).\n");
+	printf("\t-u:\tDisplay results that are unique only.\n");
+	printf("\t-s:\tDisplay results based on their score in the game Scrabble.\n");
+	printf("If no parameters are set, the user can input data directly into the terminal.\n"
+			"To sort the input press CTL+D.\n");
 }
 
 static int cCount = 0;
@@ -173,6 +183,35 @@ Word *findWords(int argc, const char *argv[], const char flags)
 			fclose(currFile);
 			free(buff);
 		}
+	}
+	else
+	{
+		int j = 0;
+		while(fgets(buff, (buffSize * multiplier), stdin) != NULL)
+		{
+			if(strlen(buff) == (unsigned )(buffSize * multiplier) - 1)
+			{
+				multiplier++;
+				fseek(stdin, -strlen(buff), SEEK_CUR);
+				buff = realloc(buff, (buffSize * multiplier)+ 1);	
+				continue;
+			}
+			tokens = strtok(buff, " ");
+			while(tokens !=  0)
+			{
+				if(j == 0)
+				{
+					list = insertNewWord(list, tokens, flags);
+					j++;
+				}
+				else
+				{
+					insertNewWord(list, tokens, flags);
+				}
+				tokens = strtok(NULL, " ");
+			}
+		}
+		free(buff);
 	}
 	return list;
 }
@@ -396,7 +435,7 @@ Word *insertNewWord(Word *word, char *string, const char flags)
 int stringcmp(char *wordString, char *string)
 {
 	int returnCode = 0;
-	if(strlen(string) < strlen(wordString))
+	if(strlen(string) <= strlen(wordString))
 	{
 		for(unsigned int i = 0; i < strlen(string); i++)
 		{
@@ -428,6 +467,7 @@ int stringcmp(char *wordString, char *string)
 	}
 	return returnCode;
 }
+
 
 int getScrabbleScore(char *string)
 {
