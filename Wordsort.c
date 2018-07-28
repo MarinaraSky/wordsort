@@ -624,7 +624,7 @@ getScrabbleScore(
 
     for (unsigned int i = 0; i < strlen(string); i++)
     {
-        if (ispunct(string[i]))
+        if (ispunct(string[i]) && !isalpha(string[i]))
         {
             continue;
         }
