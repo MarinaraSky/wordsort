@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define C_FLAG 		0x01
 #define R_FLAG 		0x02
@@ -9,7 +10,9 @@
 #define S_FLAG	 	0x10
 #define A_FLAG	 	0x20
 #define U_FLAG	 	0x40
+#define P_FLAG		0x80
 #define ALL_SORT	0x3C
+
 #define MAX_SIZE	128
 
 typedef struct Word 
@@ -32,6 +35,7 @@ static void printList_r(Word *word, const char flags);
 static Word *insertNewWord(Word *word, char *string, const char flags);
 static int stringcmp(char *wordString, char *string);
 static int getScrabbleScore(char *string);
+static void stripPunct(char *string);
 
 int main(int argc, const char *argv[])
 {
@@ -66,6 +70,7 @@ static void printHelp(void)
 	printf("\t-a, --alpha:\t\tDisplay results alphabetically(Default).\n");
 	printf("\t-u, --unique:\t\tDisplay results that are unique only.\n");
 	printf("\t-s, --scrabble:\t\tDisplay results based on their score in the game Scrabble.\n");
+	printf("\t-p, --punct:\t\tStrip punctuation from words in file.\n");
 	printf("\n");
 	printf("If no parameters are set, the user can input data directly into the terminal.\n"
 			"To sort the input press CTL+D.\n");
@@ -117,6 +122,10 @@ static unsigned char parseFlags(int argc, const char *argv[])
 				{
 					strcpy(args, "-s");
 				}
+				else if(strcmp(args, "--punct") == 0)
+				{
+					strcpy(args, "-p");
+				}
 				switch(args[1])
 				{
 					case('c'):
@@ -151,6 +160,9 @@ static unsigned char parseFlags(int argc, const char *argv[])
 						break;
 					case('u'):
 						flags |= U_FLAG;
+						break;
+					case('p'):
+						flags |= P_FLAG;
 						break;
 					case('h'):
 						printHelp();
@@ -204,6 +216,10 @@ static Word *findWords(int argc, const char *argv[], const char flags)
 				tokens = strtok(buff, " ");
 				while(tokens !=  0)
 				{
+					if((flags & P_FLAG) == P_FLAG)
+					{
+						stripPunct(tokens);
+					}
 					if(j == 0)
 					{
 						list = insertNewWord(list, tokens, flags);
@@ -513,4 +529,21 @@ static int getScrabbleScore(char *string)
 		score += scrabble[string[i] - 'a'];
 	}
 	return score;
+}
+
+static void stripPunct(char *string)
+{
+	char *noPunct = calloc(strlen(string), 1);
+	int j = 0;
+	for(unsigned int i = 0; i < strlen(string); i++)
+	{
+		if(!ispunct(string[i]))
+		{
+			noPunct[j] = string[i];
+			j++;
+		}
+		noPunct[j] = 0;
+	}
+	strcpy(string, noPunct);
+	free(noPunct);
 }
