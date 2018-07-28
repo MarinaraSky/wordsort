@@ -3,13 +3,13 @@
 #include <string.h>
 #include <ctype.h>
 
-#define C_FLAG 		0x01
-#define R_FLAG 		0x02
-#define N_FLAG 		0x04
-#define L_FLAG 		0x08
-#define S_FLAG	 	0x10
-#define A_FLAG	 	0x20
-#define U_FLAG	 	0x40
+#define C_FLAG		0x01
+#define R_FLAG		0x02
+#define N_FLAG		0x04
+#define L_FLAG		0x08
+#define S_FLAG		0x10
+#define A_FLAG		0x20
+#define U_FLAG		0x40
 #define P_FLAG		0x80
 #define ALL_SORT	0x3C
 
