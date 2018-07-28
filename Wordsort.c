@@ -26,15 +26,25 @@ typedef struct Word
 	struct Word *lastWordPointer;
 }Word;
 
+/* Help Menu function */
 static void printHelp(void);
+/* Function used to parse flags and support long args */
 static unsigned char parseFlags(int argc, const char *argv[]);
+/* Finds the words to sort, either from filename or from stdin */
 static Word *findWords(int argc, const char *argv[], const char flags);
+/* Creates a new node in my binary tree of words */
 static Word *newWord(char *word);
+/* Prints the binary tree in ascending order */
 static void printList(Word *word, const char flags);
+/* Prints the binary tree in decending order */
 static void printList_r(Word *word, const char flags);
+/* Used to find the right location for the new node in binary tree */
 static Word *insertNewWord(Word *word, char *string, const char flags);
+/* My own string compare to sort alphabetically */
 static int stringcmp(char *wordString, char *string);
+/* Function to compute scrabble score based off the supplied word */
 static int getScrabbleScore(char *string);
+/* Function used to strip leading and trailing punctuation if -p is enabled */
 static void stripPunct(char *string);
 
 int main(int argc, const char *argv[])
@@ -209,7 +219,7 @@ static Word *findWords(int argc, const char *argv[], const char flags)
 				if(strlen(buff) == (unsigned )(buffSize * multiplier) - 1)
 				{
 					multiplier++;
-					fseek(currFile, -strlen(buff), SEEK_CUR);
+					fseek(currFile ? currFile : stdin, -strlen(buff), SEEK_CUR);
 					buff = realloc(buff, (buffSize * multiplier)+ 1);	
 					continue;
 				}
@@ -301,9 +311,11 @@ static void printList(Word *word, const char flags)
 	if(word != NULL && cCount >= 0)
 	{
 		printList(word->lastWordPointer, flags);
+		/* Check if unique */
 		if((flags & U_FLAG) == U_FLAG && (word->dupe & 1) == 1);
 		else
 		{
+			/* Check if count needs to be done */
 			if((flags & C_FLAG) == C_FLAG && cCount >= 1 && word != NULL)
 			{
 				cCount--;
@@ -357,6 +369,8 @@ static Word *insertNewWord(Word *word, char *string, const char flags)
 	{
 		score += string[i];	
 	}
+	int scrabbleScore = getScrabbleScore(string);
+
 	if((flags & A_FLAG) == A_FLAG && stringcmp(word->string, string) == 1)
 	{
 		word->lastWordPointer = insertNewWord(word->lastWordPointer, string, flags);
@@ -449,7 +463,7 @@ static Word *insertNewWord(Word *word, char *string, const char flags)
 			}
 		}
 	}
-	else if(((flags & S_FLAG) == S_FLAG) && word->scrabbleScore < score)
+	else if(((flags & S_FLAG) == S_FLAG) && word->scrabbleScore < scrabbleScore)
 	{
 		word->lastWordPointer = insertNewWord(word->lastWordPointer, string, flags);
 		if((flags & U_FLAG) == U_FLAG)
@@ -519,14 +533,18 @@ static int stringcmp(char *wordString, char *string)
 	return returnCode;
 }
 
-
 static int getScrabbleScore(char *string)
 {
+	/* Array that tracks point value for each playable letter in scrabble */
 	int scrabble[] = { 1, 3, 3, 2, 1, 4, 2, 4, 1, 8, 5, 1, 3, 1, 1, 3, 10, 1, 1, 1, 1, 4, 4, 8, 4, 10};
 	int score = 0;
 	for(unsigned int i = 0; i < strlen(string); i++)
 	{
-		score += scrabble[string[i] - 'a'];
+		if(ispunct(string[i]))
+		{
+			continue;
+		}
+		score += scrabble[tolower(string[i]) - 'a'];
 	}
 	return score;
 }
